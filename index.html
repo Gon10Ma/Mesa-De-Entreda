@@ -3,10 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pagina Web</title>
-    <script src="expedientes-metodos.js" defer></script>
+    <title>Proyecto Expedientes GDEBA</title>
+    <script src="JS/main.js" defer></script>
+    <link rel="stylesheet" href="CSS/style.css" >
 </head>
 <body>
-    <h1>GESTIONADOR DE EXPEDIENTES GDEBA</h1>
+    <h1>Programa de Expedientes formato BASICO-INICIAL</h1>
+    <p>Con este programa vamos a poder cargar expedientes por nuestra cuenta y solicitar informacion y listas </p>
+    <form id="formulario-expediente">
+        <input class="input-numero" placeholder= "Numero de Expediente">
+        <input class="input-nombre" placeholder= "Nombre ">
+        <input class="input-apellido" placeholder= "Aplellido ">
+        <input class="input-tipo" placeholder= "Tipo de Expedietne ">
+        <input class="input-anio" placeholder= "Año ">
+        <input class="input-mes" placeholder= "Mes ">
+        <input class="input-dia" placeholder= "Dia ">
+        <button id="agregar-expediente">Agregar Expediente</button>
+    </form>
+    <div>
+        <div id= "consulta-busqueda" >Solicitud Expediente  </div>
+        <input type="text" id="busqueda-expediente" placeholder="Ingrese un Dato... ( Numero de Expediente, Nombre, Apellido, Tipo de Expediente, Mes o Dia)"> 
+        <div id= "respuesta-busqueda"> Respuesta de la Busqueda </div>
+        <div id= "lista-expediente"> Listado de Expedientes </div>
+    </div>
 </body>
 </html>
