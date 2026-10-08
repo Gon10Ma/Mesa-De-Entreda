@@ -23,7 +23,7 @@ class Expediente {
     }
 }
 
-// 1. CARGA INICIAL: Lee del disco duro (localStorage) o usa los 5 por defecto si está vacío
+// 1. PERSISTENCIA: Recuperar datos del localStorage o inicializar por defecto
 let mesaDeEntrada = JSON.parse(localStorage.getItem("Expedientes")) || [
     new Expediente("EX-2025-52235765", "Agustina mi amorcito", "Gigena", "Cambio de Agrupamiento", 2025, 5, 19),
     new Expediente("EX-2026-23876660", "Juan", "Depratti Ramirez", "Cambio de Agrupamiento", 2025, 7, 25),
@@ -55,24 +55,35 @@ const listaExpedientes = document.getElementById("lista-expediente");
 // FUNCIONES AUXILIARES Y DE RENDERIZADO
 // =============================================================================
 
-// Sincroniza el estado actual de la memoria RAM con el almacenamiento local (disco)
+// Almacenar / Sincronizar en LocalStorage
 const guardadoStorage = () => {
     localStorage.setItem("Expedientes", JSON.stringify(mesaDeEntrada));
 };
 
-// Dibuja las tarjetas en el DOM
+// Vaciar Storage y reiniciar estado
+const vaciarStorage = () => {
+    localStorage.removeItem("Expedientes");
+    mesaDeEntrada = [];
+    pintarExpediente(mesaDeEntrada);
+};
+
+// Renderizado dinámico con DESTRUCTURING de objetos
 const pintarExpediente = (lista) => {
     listaExpedientes.innerHTML = "";
+
     lista.forEach((expe) => {
+        // Desestructuración de propiedades del expediente
+        const { numero, nombre, apellido, tipo, anio, mes, dia, estado } = expe;
+
         listaExpedientes.innerHTML += `
             <div class="tarjeta-expediente">
                 <div class="info-expediente">
-                    <h3> ${expe.numero} - ${expe.apellido}, ${expe.nombre}</h3>
-                    <p>Trámite: ${expe.tipo}</p>
-                    <p>Fecha: ${expe.dia}/${expe.mes}/${expe.anio}</p>
-                    <p>Estado: ${expe.estado}</p>
+                    <h3>${numero} - ${apellido}, ${nombre}</h3>
+                    <p>Trámite: ${tipo}</p>
+                    <p>Fecha: ${dia}/${mes}/${anio}</p>
+                    <p>Estado: ${estado}</p>
                 </div>
-                <button class="btn-eliminar" data-numero="${expe.numero}">Eliminar</button>
+                <button class="btn-eliminar" data-numero="${numero}">Eliminar</button>
             </div>
         `;
     });
@@ -105,12 +116,12 @@ formulario.addEventListener("submit", (event) => {
     );
 
     mesaDeEntrada.push(nuevoExpediente);
-    guardadoStorage(); // 💾 Persistimos en disco
+    guardadoStorage();
     pintarExpediente(mesaDeEntrada);
     formulario.reset();
 });
 
-// Creando motor de Búsqueda en el Programa 
+// Motor de Búsqueda con OPERADOR TERNARIO (?)
 busquedaExpediente.addEventListener("input", (e) => {
     const texto = busquedaExpediente.value.toLowerCase();
     const resultado = mesaDeEntrada.filter((expe) => 
@@ -119,10 +130,14 @@ busquedaExpediente.addEventListener("input", (e) => {
         expe.apellido.toLowerCase().includes(texto) ||
         expe.tipo.toLowerCase().includes(texto)
     );
-    pintarExpediente(resultado);
+
+    // Operador ternario reemplazando el condicional simple
+    resultado.length > 0
+        ? pintarExpediente(resultado)
+        : (listaExpedientes.innerHTML = `<p class="alerta-vacio">No se encontraron expedientes para "${texto}"</p>`);
 });
 
-// Funcionalidad del Botón de Eliminar Expediente (Delegación de eventos)
+// Funcionalidad del Botón de Eliminar Expediente (Borrado y persistencia)
 listaExpedientes.addEventListener("click", (e) => {
     if (e.target.classList.contains("btn-eliminar")) {
         const expedienteEliminado = e.target.dataset.numero;
@@ -130,9 +145,8 @@ listaExpedientes.addEventListener("click", (e) => {
         
         if (indice !== -1) {
             mesaDeEntrada.splice(indice, 1);
-            guardadoStorage(); // 💾 Persistimos en disco
+            guardadoStorage();
             pintarExpediente(mesaDeEntrada);
         }
     }
 });
-
