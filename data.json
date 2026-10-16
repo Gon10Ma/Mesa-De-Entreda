@@ -1,0 +1,52 @@
+[
+  {
+    "numero": "EX-2025-52235765",
+    "nombre": "Agustina mi amorcito",
+    "apellido": "Gigena",
+    "tipo": "Cambio de Agrupamiento",
+    "anio": 2025,
+    "mes": 5,
+    "dia": 19,
+    "estado": "En Mesa de Entrada"
+  },
+  {
+    "numero": "EX-2026-23876660",
+    "nombre": "Juan",
+    "apellido": "Depratti Ramirez",
+    "tipo": "Cambio de Agrupamiento",
+    "anio": 2025,
+    "mes": 7,
+    "dia": 25,
+    "estado": "En Mesa de Entrada"
+  },
+  {
+    "numero": "EX-2026-34534123",
+    "nombre": "Carlos",
+    "apellido": "Bella",
+    "tipo": "Designacion Director",
+    "anio": 2026,
+    "mes": 2,
+    "dia": 8,
+    "estado": "En Mesa de Entrada"
+  },
+  {
+    "numero": "EX-2025-23335781",
+    "nombre": "Valeria",
+    "apellido": "Posadas",
+    "tipo": "Traslado Interno",
+    "anio": 2025,
+    "mes": 9,
+    "dia": 23,
+    "estado": "En Mesa de Entrada"
+  },
+  {
+    "numero": "EX-2026-43567812",
+    "nombre": "Beatriz",
+    "apellido": "Sago",
+    "tipo": "Reconocimiento de Servicios",
+    "anio": 2026,
+    "mes": 4,
+    "dia": 15,
+    "estado": "En Mesa de Entrada"
+  }
+]

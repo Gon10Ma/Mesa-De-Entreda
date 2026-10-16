@@ -1,5 +1,5 @@
 // =============================================================================
-// Proyecto : Novena Entrega                            Fecha : 14 / 10 / 2026 
+// Proyecto : Decima Entrega                            Fecha : 15 / 10 / 2026 
 // Alumno   : Diez Marin Gonzalo 
 // Curso    : JavaScript / Backend - CoderHouse         Comision : 94820
 // =============================================================================
@@ -8,8 +8,8 @@
 
 // Caratula de los Expedientes ---> COMIENZAN EN MESA DE ENTRADA 
 class Expediente {
-    constructor(numero, nombre, apellido, tipo, anio, mes, dia) {
-        this.estado = "En Mesa de Entrada";
+    constructor(numero, nombre, apellido, tipo, anio, mes, dia, estado = "En Mesa de Entrada") {
+        this.estado = estado;
         this.numero = numero;
         this.nombre = nombre;
         this.apellido = apellido;
@@ -23,20 +23,8 @@ class Expediente {
     }
 }
 
-// Funcion para tener siempre a mano los 5 expedientes iniciales
-const cargarExpedientesIniciales = () => [
-    new Expediente("EX-2025-52235765", "Agustina mi amorcito", "Gigena", "Cambio de Agrupamiento", 2025, 5, 19),
-    new Expediente("EX-2026-23876660", "Juan", "Depratti Ramirez", "Cambio de Agrupamiento", 2025, 7, 25),
-    new Expediente("EX-2026-34534123", "Carlos", "Bella", "Designacion Director", 2026, 2, 8),
-    new Expediente("EX-2025-23335781", "Valeria", "Posadas", "Traslado Interno", 2025, 9, 23),
-    new Expediente("EX-2026-43567812", "Beatriz", "Sago", "Reconocimiento de Servicios", 2026, 4, 15)
-];
-
-// Recuperar datos del localStorage ---> Si no hay nada guardado, carga los iniciales
-const datosGuardados = localStorage.getItem("Expedientes");
-let mesaDeEntrada = datosGuardados !== null
-    ? JSON.parse(datosGuardados)
-    : cargarExpedientesIniciales();
+// Lista principal donde guardamos los expedientes en memoria
+let mesaDeEntrada = [];
 
 // Acceso al DOM de Formularios 
 const formulario = document.getElementById("formulario-expediente");
@@ -106,14 +94,73 @@ const pintarExpediente = (lista) => {
     });
 };
 
-// Pintamos los expedientes al abrir la pagina
-pintarExpediente(mesaDeEntrada);
+// =============================================================================
+// ASINCRONIA: PEDIR EXPEDIENTES CON FETCH (async / await)
+// =============================================================================
+
+const pedirExpedientes = async () => {
+    // 1. Feedback visual mientras esperamos la respuesta
+    listaExpedientes.innerHTML = `<p class="alerta-cargando">Cargando expedientes desde el servidor...</p>`;
+
+    try {
+        // 2. Consulta asincronica con fetch hacia el archivo JSON local
+        const respuesta = await fetch("./data.json");
+
+        if (!respuesta.ok) {
+            throw new Error(`Error en la solicitud: ${respuesta.status}`);
+        }
+
+        const datosJSON = await respuesta.json();
+
+        // 3. Revisamos si el usuario ya tenia cambios en localStorage
+        const datosGuardados = localStorage.getItem("Expedientes");
+
+        if (datosGuardados !== null) {
+            // Si ya existia el storage (incluso si fue vaciado []), lo respetamos
+            mesaDeEntrada = JSON.parse(datosGuardados);
+        } else {
+            // Si es la primera vez que entra, usamos los datos traidos del fetch
+            mesaDeEntrada = datosJSON.map((item) => new Expediente(
+                item.numero,
+                item.nombre,
+                item.apellido,
+                item.tipo,
+                item.anio,
+                item.mes,
+                item.dia,
+                item.estado
+            ));
+            guardadoStorage();
+        }
+
+        // 4. Renderizamos en el DOM y mostramos aviso con Toastify
+        pintarExpediente(mesaDeEntrada);
+        mostrarAviso("Expedientes cargados con exito");
+
+    } catch (error) {
+        // Manejo de errores con SweetAlert2 en vez de alert nativo
+        listaExpedientes.innerHTML = `<p class="alerta-error">Ocurrio un problema al cargar los expedientes.</p>`;
+        
+        Swal.fire({
+            icon: "error",
+            title: "Error de conexion",
+            text: "No se pudieron obtener los datos de la Mesa de Entrada. Intente nuevamente mas tarde."
+        });
+    }
+};
+
+// Llamamos a la funcion asincronica al iniciar la pagina
+pedirExpedientes();
+
+// =============================================================================
+// EVENTOS DEL SISTEMA
+// =============================================================================
 
 // Capturando los Valores de los Inputs
 formulario.addEventListener("submit", (event) => {
     event.preventDefault();
 
-    // Validacion de fecha con SweetAlert2 en vez de alert comun
+    // Validacion de fecha con SweetAlert2
     if (parseFloat(mes.value) < 1 || parseFloat(mes.value) > 12 || parseFloat(dia.value) < 1 || parseFloat(dia.value) > 31) {
         Swal.fire({
             icon: "error",
@@ -142,7 +189,7 @@ formulario.addEventListener("submit", (event) => {
 });
 
 // Motor de Busqueda ---> Con operador ternario (?)
-busquedaExpediente.addEventListener("input", (e) => {
+busquedaExpediente.addEventListener("input", () => {
     const texto = busquedaExpediente.value.toLowerCase();
     const resultado = mesaDeEntrada.filter((expe) => 
         expe.numero.toLowerCase().includes(texto) ||
@@ -236,12 +283,21 @@ if (botonVaciar) {
     botonVaciar.addEventListener("click", vaciarStorage);
 }
 
-// Boton para volver a cargar los 5 expedientes de prueba
+// Boton para volver a pedir los expedientes al archivo JSON (Restablecer)
 if (botonRestablecer) {
     botonRestablecer.addEventListener("click", () => {
-        mesaDeEntrada = cargarExpedientesIniciales();
-        guardadoStorage();
-        pintarExpediente(mesaDeEntrada);
-        mostrarAviso("Se recuperaron los expedientes iniciales", "#3498db");
+        Swal.fire({
+            title: "¿Restablecer datos originales?",
+            text: "Se volveran a consultar los datos desde el archivo data.json",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Si, restablecer",
+            cancelButtonText: "Cancelar"
+        }).then(async (respuesta) => {
+            if (respuesta.isConfirmed) {
+                localStorage.removeItem("Expedientes");
+                await pedirExpedientes();
+            }
+        });
     });
 }
