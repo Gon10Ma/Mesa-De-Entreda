@@ -1,5 +1,5 @@
 // =============================================================================
-// Proyecto : Decima Entrega                            Fecha : 15 / 10 / 2026 
+// Proyecto : Sistema de Gestion de Expedientes         Fecha : 17/10/2026
 // Alumno   : Diez Marin Gonzalo 
 // Curso    : JavaScript / Backend - CoderHouse         Comision : 94820
 // =============================================================================
@@ -23,7 +23,7 @@ class Expediente {
     }
 }
 
-// Lista principal donde guardamos los expedientes en memoria
+// Lista principal en memoria
 let mesaDeEntrada = [];
 
 // Acceso al DOM de Formularios 
@@ -36,13 +36,11 @@ const anio = document.querySelector(".input-anio");
 const mes = document.querySelector(".input-mes");
 const dia = document.querySelector(".input-dia");
 
-// BOTON DE CARGA DE EXPEDIENTES 
+// Boton de carga
 const botonDeCarga = document.getElementById("agregar-expediente");
 
 // Respuestas a Solicitudes y Botones de la Mesa
-const consultaBusqueda = document.getElementById("consulta-busqueda");
 const busquedaExpediente = document.getElementById("busqueda-expediente");
-const respuestaBusqueda = document.getElementById("respuesta-busqueda");
 const listaExpedientes = document.getElementById("lista-expediente");
 const botonVaciar = document.getElementById("vaciar-mesa");
 const botonRestablecer = document.getElementById("restablecer-mesa");
@@ -95,31 +93,28 @@ const pintarExpediente = (lista) => {
 };
 
 // =============================================================================
-// ASINCRONIA: PEDIR EXPEDIENTES CON FETCH (async / await)
+// ASINCRONIA CON FETCH Y ESTRUCTURA TRY-CATCH-FINALLY
 // =============================================================================
+// ---> try: intenta hacer la peticion asincronica al archivo data.json.
+// ---> catch: captura cualquier fallo de red o archivo inexistente sin romper la app.
+// ---> finally: se ejecuta SIEMPRE al terminar el flujo, garantizando el cierre del ciclo.
 
 const pedirExpedientes = async () => {
-    // 1. Feedback visual mientras esperamos la respuesta
     listaExpedientes.innerHTML = `<p class="alerta-cargando">Cargando expedientes desde el servidor...</p>`;
 
     try {
-        // 2. Consulta asincronica con fetch hacia el archivo JSON local
         const respuesta = await fetch("./data.json");
 
         if (!respuesta.ok) {
-            throw new Error(`Error en la solicitud: ${respuesta.status}`);
+            throw new Error(`Error en la conexion: ${respuesta.status}`);
         }
 
         const datosJSON = await respuesta.json();
-
-        // 3. Revisamos si el usuario ya tenia cambios en localStorage
         const datosGuardados = localStorage.getItem("Expedientes");
 
         if (datosGuardados !== null) {
-            // Si ya existia el storage (incluso si fue vaciado []), lo respetamos
             mesaDeEntrada = JSON.parse(datosGuardados);
         } else {
-            // Si es la primera vez que entra, usamos los datos traidos del fetch
             mesaDeEntrada = datosJSON.map((item) => new Expediente(
                 item.numero,
                 item.nombre,
@@ -133,34 +128,34 @@ const pedirExpedientes = async () => {
             guardadoStorage();
         }
 
-        // 4. Renderizamos en el DOM y mostramos aviso con Toastify
         pintarExpediente(mesaDeEntrada);
-        mostrarAviso("Expedientes cargados con exito");
+        mostrarAviso("Expedientes sincronizados con exito");
 
     } catch (error) {
-        // Manejo de errores con SweetAlert2 en vez de alert nativo
-        listaExpedientes.innerHTML = `<p class="alerta-error">Ocurrio un problema al cargar los expedientes.</p>`;
-        
+        listaExpedientes.innerHTML = `<p class="alerta-error">No se pudieron cargar los datos.</p>`;
         Swal.fire({
             icon: "error",
-            title: "Error de conexion",
-            text: "No se pudieron obtener los datos de la Mesa de Entrada. Intente nuevamente mas tarde."
+            title: "Error de lectura",
+            text: "Ocurrio un fallo al sincronizar con data.json. Revise la conexion."
         });
+    } finally {
+        // ---> El bloque finally se ejecuta tanto si hubo exito como si hubo error
+        console.log("Consulta de datos asincronica finalizada.");
     }
 };
 
-// Llamamos a la funcion asincronica al iniciar la pagina
+// Carga inicial
 pedirExpedientes();
 
 // =============================================================================
-// EVENTOS DEL SISTEMA
+// EVENTOS Y ASINCRONIA CON setTimeout()
 // =============================================================================
 
-// Capturando los Valores de los Inputs
+// ALTA DE EXPEDIENTES: Uso de setTimeout() para diferir la respuesta y simular espera
 formulario.addEventListener("submit", (event) => {
     event.preventDefault();
 
-    // Validacion de fecha con SweetAlert2
+    // Validacion previa
     if (parseFloat(mes.value) < 1 || parseFloat(mes.value) > 12 || parseFloat(dia.value) < 1 || parseFloat(dia.value) > 31) {
         Swal.fire({
             icon: "error",
@@ -180,15 +175,36 @@ formulario.addEventListener("submit", (event) => {
         dia.value
     );
 
-    mesaDeEntrada.push(nuevoExpediente);
-    guardadoStorage();
-    pintarExpediente(mesaDeEntrada);
-    formulario.reset();
+    // Desactivamos el boton para evitar dobles envios mientras procesa
+    const botonSubmit = formulario.querySelector("button[type='submit']") || botonDeCarga;
+    if (botonSubmit) botonSubmit.disabled = true;
 
-    mostrarAviso("Expediente agregado correctamente");
+    // Aviso inmediato al usuario de que la peticion comenzo
+    mostrarAviso("Procesando caratula en Mesa de Entradas...", "#f39c12");
+
+    // ---> USO DE setTimeout: Manejo de asincronia para diferir la confirmacion 
+    // Simulamos la demora real del registro administrativo (1.5 segundos)
+    setTimeout(() => {
+        try {
+            mesaDeEntrada.push(nuevoExpediente);
+            guardadoStorage();
+            pintarExpediente(mesaDeEntrada);
+            formulario.reset();
+            mostrarAviso("Expediente registrado con exito", "#2ecc71");
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Error al guardar",
+                text: "No se pudo almacenar el expediente."
+            });
+        } finally {
+            // Reactivamos el boton pase lo que pase
+            if (botonSubmit) botonSubmit.disabled = false;
+        }
+    }, 1500);
 });
 
-// Motor de Busqueda ---> Con operador ternario (?)
+// Motor de Busqueda
 busquedaExpediente.addEventListener("input", () => {
     const texto = busquedaExpediente.value.toLowerCase();
     const resultado = mesaDeEntrada.filter((expe) => 
@@ -203,10 +219,10 @@ busquedaExpediente.addEventListener("input", () => {
         : (listaExpedientes.innerHTML = `<p class="alerta-vacio">No se encontraron expedientes para "${texto}"</p>`);
 });
 
-// Funcionalidad de los Botones de Editar y Eliminar Expediente
+// Botones de Cambiar Estado y Eliminar
 listaExpedientes.addEventListener("click", (e) => {
     
-    // Boton para cambiar el estado del expediente
+    // Cambiar estado
     if (e.target.classList.contains("btn-editar")) {
         const numeroBuscado = e.target.dataset.numero;
         const expedienteEncontrado = mesaDeEntrada.find((exp) => exp.numero === numeroBuscado);
@@ -235,7 +251,7 @@ listaExpedientes.addEventListener("click", (e) => {
         });
     }
 
-    // Boton para eliminar un expediente
+    // Eliminar expediente
     if (e.target.classList.contains("btn-eliminar")) {
         const expedienteEliminado = e.target.dataset.numero;
         const indice = mesaDeEntrada.findIndex((exp) => exp.numero === expedienteEliminado);
@@ -260,7 +276,7 @@ listaExpedientes.addEventListener("click", (e) => {
     }
 });
 
-// Funcion para vaciar todo el Storage desde el boton
+// Vaciar mesa
 const vaciarStorage = () => {
     Swal.fire({
         title: "¿Vaciar toda la Mesa de Entrada?",
@@ -283,7 +299,7 @@ if (botonVaciar) {
     botonVaciar.addEventListener("click", vaciarStorage);
 }
 
-// Boton para volver a pedir los expedientes al archivo JSON (Restablecer)
+// Restablecer datos originales desde data.json
 if (botonRestablecer) {
     botonRestablecer.addEventListener("click", () => {
         Swal.fire({
